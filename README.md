@@ -82,7 +82,7 @@ Useful targets: `make up`, `make down`, `make logs`, `make test`, `make lint`.
 
 **Normalization at the edge.** The producer flattens the nested recentchange JSON into a fixed schema (`WikiEdit` in `common/events.py`) before anything touches Kafka. Downstream consumers never see feed quirks: missing lengths, absent revision ids, non-edit event types. The schema is pinned by a unit test, and the Spark job declares the matching struct.
 
-**Top-N in Spark, not in the dashboard.** Top pages and editors are ranked per window inside the stream (window function over each micro-batch's counts), so the dashboard is a dumb reader. Window functions on streaming DataFrames only see the current micro-batch, which is exactly the data a per-window ranking needs in update mode.
+**Top-N in Spark, not in the dashboard.** Top pages and editors are ranked per window inside the Spark job, so the dashboard is a dumb reader. The ranking runs in `foreachBatch` on each micro-batch's counts: Structured Streaming rejects window functions like `ROW_NUMBER` on streaming DataFrames, but the DataFrame handed to `foreachBatch` is a regular static one where ranking works, and a micro-batch carries exactly the window updates a per-window ranking needs in update mode.
 
 **Events keyed by wiki.** Partitioning by wiki keeps per-wiki ordering and locality. The feed is only about 2 edits/second on average, so a single partition would also work; keying by wiki is the layout that scales to filtered or higher-volume variants of this pipeline.
 
@@ -107,11 +107,13 @@ python producer/producer.py   # KAFKA_BROKER defaults to localhost:19092
 
 ## Screenshots
 
-<!-- TODO: add screenshots once you have run the pipeline locally -->
-<!-- ![Dashboard](docs/images/dashboard.png) -->
-<!-- ![Redpanda Console](docs/images/console.png) -->
+The live dashboard: totals and edits per minute, split bot vs human.
 
-_Placeholder: run `docker compose up`, let it collect a few minutes of edits, and drop screenshots of the dashboard and the Redpanda Console topic view here._
+![Dashboard](docs/images/dashboard.png)
+
+Redpanda Console: the single-broker cluster and the `wikipedia.edits` topic.
+
+![Redpanda Console](docs/images/console.png)
 
 ## Future improvements
 
