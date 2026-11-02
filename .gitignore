@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Environment
+.env
+
+# Pipeline data (DuckDB database, Parquet lake, Spark checkpoints)
+data/
+*.duckdb
+*.duckdb.wal
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
